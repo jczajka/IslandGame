@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using IslandGame.Engine.Light;
 using IslandGame.Engine;
 using IslandGame.Engine.OpenGL;
+using IslandGame.Engine.Scene;
 
 namespace IslandGame {
 
@@ -16,13 +17,21 @@ namespace IslandGame {
         private double time;
 
         private ModelInformation monkey;
-        private Geometry specialmonkey;
+        private ModelRenderer specialmonkey;
+        private GameObject monkeynode;
 
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
 
             
             Keyboard.KeyDown += (object sender, KeyboardKeyEventArgs key) => {
+                if(key.Key == Key.F12) {
+                    if(VSync == VSyncMode.Off) {
+                        VSync = VSyncMode.Adaptive;
+                    } else {
+                        VSync = VSyncMode.Off;
+                    }
+                }
                 if (key.Key == Key.F11) {
                     if (WindowState != WindowState.Fullscreen) {
                         //VSync = VSyncMode.Adaptive;
@@ -41,45 +50,49 @@ namespace IslandGame {
                 if (key.Key == Key.F8) {
                     Fxaa = !Fxaa;
                 }
-                if(key.Key == Key.F7) {
+                if(key.Key == Key.F1) {
                     ModelBatch.RowOrder = !ModelBatch.RowOrder;
                 }
+                if(key.Key == Key.F7) {
+                    sun.Color = (sun.Color.Length == 0 ? new Vector3(1,1,1) : new Vector3(0, 0,0));
+                }
                 if (key.Key == Key.Tab) {
-                    LightManager.PointLightRenderer.Clear();
-                    LightManager.DirectionalLightRenderer.Clear();
-                    LightManager.SpotLightRenderer.Clear();
+                    Root.Remove(monkeynode);
+                    Root.Add(monkeynode = new GameObject());
                 }
                 if(key.Key == Key.Space) {
-                    ModelBatch.AddGeometry(new Geometry(monkey, new Matrix4(1,0,0,Camera.Position.X,
-                                                                            0,1,0,Camera.Position.Y,
-                                                                            0,0,1,Camera.Position.Z,
-                                                                            0,0,0,1) * Matrix4.CreateFromQuaternion(Camera.Rotation) * Matrix4.CreateRotationY((float)Math.PI)));
+                    monkeynode.Add(new ModelRenderer(monkey, new Matrix4(1,0,0,Camera.Position.X,
+                                                                         0,1,0,Camera.Position.Y,
+                                                                         0,0,1,Camera.Position.Z,
+                                                                         0,0,0,1) * Matrix4.CreateFromQuaternion(Camera.Rotation) * Matrix4.CreateRotationY((float)Math.PI)));
                 }
             };
             Mouse.ButtonDown += (object sender, MouseButtonEventArgs key) => {
                 if (CursorVisible == false) {
                     if (key.Button == MouseButton.Left) {
                         Random rew = new Random();
-                        LightManager.AddLight(new PointLight(Camera.Position).SetColor(new Vector3((float)rew.NextDouble(), (float)rew.NextDouble(), (float)rew.NextDouble()) * 4));
+                        monkeynode.Add(new PointLight(Camera.Position).SetColor(new Vector3((float)rew.NextDouble(), (float)rew.NextDouble(), (float)rew.NextDouble()) * 4));
                     }
                     if (key.Button == MouseButton.Middle) {
                         Random rew = new Random();
-                        LightManager.AddLight(new DirectionalLight(Camera.Forward).SetColor(new Vector3((float)rew.NextDouble(), (float)rew.NextDouble(), (float)rew.NextDouble()) * 0.5f));
+                        monkeynode.Add(new DirectionalLight(Camera.Forward).SetColor(new Vector3((float)rew.NextDouble(), (float)rew.NextDouble(), (float)rew.NextDouble()) * 0.5f));
                     }
                     if (key.Button == MouseButton.Right) {
                         Random rew = new Random();
-                        LightManager.AddLight(new SpotLight(Camera.Position, Camera.Forward).SetColor(new Vector3((float)rew.NextDouble(), (float)rew.NextDouble(), (float)rew.NextDouble()) * 4).SetCLQ(1, 0.09f, 0.0001f));
+                        monkeynode.Add(new SpotLight(Camera.Position, Camera.Forward).SetCLQ(1, 0.09f, 0.0001f).SetColor(new Vector3((float)rew.NextDouble(), (float)rew.NextDouble(), (float)rew.NextDouble()) * 4));
                     }
                 }
             };
 
             sun = new DirectionalLight(new Vector3(0, -1, 0));
             time = 30;
-            LightManager.AddDynamicLight(sun);
+            Root.Add(sun);
 
-            ModelBatch.AddGeometry(new Geometry(ModelBatch.LoadModel(Faces.FromFile(@".\Data\Model\World.lpm"))));
+           
             monkey = ModelBatch.LoadModel(Faces.FromFile(@".\Data\Model\Monkey.lpm"));//new Model(faces)
-            ModelBatch.AddGeometry((specialmonkey = new Geometry(monkey, Matrix4.Identity)));
+            Root.Add((specialmonkey = new ModelRenderer(monkey, Matrix4.Identity)));
+            Root.Add(new ModelRenderer(ModelBatch.LoadModel(Faces.FromFile(@".\Data\Model\World.lpm"))));
+            Root.Add(monkeynode = new GameObject());
             
         }
 
@@ -113,7 +126,7 @@ namespace IslandGame {
             if (Keyboard[Key.D]) Camera.Position += Camera.Right   * (Keyboard[Key.ShiftLeft] ? 600 : 100) * (float)e.Time;
 
             if (Keyboard[Key.Q]) time += e.Time * 2;
-            if (!Keyboard[Key.X]) Title = "Lights: " + LightManager.LightCount + " | Bloom: " + Bloom + " | FXAA: " + Fxaa;
+            if (!Keyboard[Key.X]) Title = "Lights: " + Root.GetCount<Light>() + " | Bloom: " + Bloom + " | FXAA: " + Fxaa;
 
             sun.Direction = -new Vector3((float)Math.Cos(time / 20), (float)Math.Sin(time / 20), (float)Math.Sin(time / 20) * 0.5f).Normalized();
 
@@ -131,7 +144,7 @@ namespace IslandGame {
                                                   0, 1, 0, 200,
                                                   0, 0, 1, 0,
                                                   0, 0, 0, 1) * rot;
-
+            
             //ModelBatch.AddGeometry(new Geometry(monkey, Matrix4.CreateFromQuaternion(Camera.Rotation) * Matrix4.CreateTranslation(Camera.Position)));
 
         }

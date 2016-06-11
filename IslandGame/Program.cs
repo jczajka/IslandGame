@@ -1,4 +1,5 @@
-﻿using OpenTK;
+﻿using IslandGame.Engine.Scene;
+using OpenTK;
 using System;
 using System.Diagnostics;
 
@@ -18,6 +19,9 @@ namespace IslandGame {
             }
 
             //new Octree(new Vector3(0, 0, 0), 1, 2);
+            
+
         }
+
     }
 }

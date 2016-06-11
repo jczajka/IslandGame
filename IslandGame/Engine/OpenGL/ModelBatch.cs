@@ -2,6 +2,8 @@
 using System.IO;
 using OpenTK.Graphics.OpenGL4;
 using System.Collections.Generic;
+using IslandGame.Engine.Scene;
+using System;
 
 namespace IslandGame.Engine.OpenGL {
 
@@ -14,12 +16,9 @@ namespace IslandGame.Engine.OpenGL {
         private int ibo;
         private List<float> data;
 
-        List<Geometry> geometry;
-
         public ModelBatch() {
             
             data = new List<float>();
-            geometry = new List<Geometry>();
             
             vao = GL.GenVertexArray();
             vbo = GL.GenBuffer();
@@ -92,56 +91,57 @@ namespace IslandGame.Engine.OpenGL {
             return mi;
         }
 
-        public void Draw() {
+        public void Draw(GameObject root) {
 
-            float[] positions = new float[geometry.Count * 16];
-            int[] indirect = new int[geometry.Count * 4];
+            int number = root.GetCount<ModelRenderer>();
+            if(number > 0) {
 
-            for(int i = 0; i < geometry.Count; i++) {
+                float[] positions = new float[number * 16];
+                int[] indirect = new int[number * 4];
+                
+                int index = 0;
 
-                Matrix4 m = geometry[i].Transform;
+                root.Foreach<ModelRenderer>((GameObject go, ModelRenderer mr) => {
+                    Matrix4 m = mr.Transform;
 
-                positions[i * 16 +  0] = roworder ? m.M11 : m.M11;
-                positions[i * 16 +  1] = roworder ? m.M12 : m.M21;
-                positions[i * 16 +  2] = roworder ? m.M13 : m.M31;
-                positions[i * 16 +  3] = roworder ? m.M14 : m.M41;
-                                            
-                positions[i * 16 +  4] = roworder ? m.M21 : m.M12;
-                positions[i * 16 +  5] = roworder ? m.M22 : m.M22;
-                positions[i * 16 +  6] = roworder ? m.M23 : m.M32;
-                positions[i * 16 +  7] = roworder ? m.M24 : m.M42;
-                                            
-                positions[i * 16 +  8] = roworder ? m.M31 : m.M13;
-                positions[i * 16 +  9] = roworder ? m.M32 : m.M23;
-                positions[i * 16 + 10] = roworder ? m.M33 : m.M33;
-                positions[i * 16 + 11] = roworder ? m.M34 : m.M43;
-                                            
-                positions[i * 16 + 12] = roworder ? m.M41 : m.M14;
-                positions[i * 16 + 13] = roworder ? m.M42 : m.M24;
-                positions[i * 16 + 14] = roworder ? m.M43 : m.M34;
-                positions[i * 16 + 15] = roworder ? m.M44 : m.M44;
+                    positions[index * 16 +  0] = roworder ? m.M11 : m.M11;
+                    positions[index * 16 +  1] = roworder ? m.M12 : m.M21;
+                    positions[index * 16 +  2] = roworder ? m.M13 : m.M31;
+                    positions[index * 16 +  3] = roworder ? m.M14 : m.M41;
+                                              
+                    positions[index * 16 +  4] = roworder ? m.M21 : m.M12;
+                    positions[index * 16 +  5] = roworder ? m.M22 : m.M22;
+                    positions[index * 16 +  6] = roworder ? m.M23 : m.M32;
+                    positions[index * 16 +  7] = roworder ? m.M24 : m.M42;
+                                             
+                    positions[index * 16 +  8] = roworder ? m.M31 : m.M13;
+                    positions[index * 16 +  9] = roworder ? m.M32 : m.M23;
+                    positions[index * 16 + 10] = roworder ? m.M33 : m.M33;
+                    positions[index * 16 + 11] = roworder ? m.M34 : m.M43;
+                                               
+                    positions[index * 16 + 12] = roworder ? m.M41 : m.M14;
+                    positions[index * 16 + 13] = roworder ? m.M42 : m.M24;
+                    positions[index * 16 + 14] = roworder ? m.M43 : m.M34;
+                    positions[index * 16 + 15] = roworder ? m.M44 : m.M44;
+                
+                    indirect[index * 4 + 0] = mr.ModelInformation.Count;
+                    indirect[index * 4 + 1] = 1;
+                    indirect[index * 4 + 2] = mr.ModelInformation.First;
+                    indirect[index * 4 + 3] = index;
+                    index++;
+                });
 
-                indirect[i * 4 + 0] = geometry[i].ModelInformation.Count;
-                indirect[i * 4 + 1] = 1;
-                indirect[i * 4 + 2] = geometry[i].ModelInformation.First;
-                indirect[i * 4 + 3] = i;
-
+                GL.BindVertexArray(vao);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, ibo);
+                GL.BufferData(BufferTarget.ArrayBuffer, positions.Length * sizeof(float), positions, BufferUsageHint.StreamDraw);
+                GL.MultiDrawArraysIndirect(PrimitiveType.Triangles, indirect, indirect.Length / 4, 16);
             }
-            
-            GL.BindVertexArray(vao);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, ibo);
-            GL.BufferData(BufferTarget.ArrayBuffer, positions.Length * sizeof(float), positions, BufferUsageHint.StreamDraw);
-            GL.MultiDrawArraysIndirect(PrimitiveType.Triangles, indirect, indirect.Length / 4, 16);
         }
 
         public override void Release() {
             GL.DeleteBuffer(vbo);
             GL.DeleteVertexArray(vao);
             GL.DeleteBuffer(ibo);
-        }
-
-       public void AddGeometry(Geometry g) {
-            geometry.Add(g);
         }
 
     }
@@ -165,16 +165,20 @@ namespace IslandGame.Engine.OpenGL {
         }
     }
 
-    public class Geometry {
+    public class ModelRenderer : GameComponent{
+
         ModelInformation mi;
         Matrix4 transform;
-        public Geometry(ModelInformation mi, Matrix4 transform) {
+
+        public ModelRenderer(ModelInformation mi, Matrix4 transform) {
             this.mi = mi;
             this.transform = transform;
         }
-        public Geometry(ModelInformation mi) : this(mi, Matrix4.Identity) {
+
+        public ModelRenderer(ModelInformation mi) : this(mi, Matrix4.Identity) {
 
         }
+
         public Matrix4 Transform {
             get {
                 return transform;
@@ -183,10 +187,16 @@ namespace IslandGame.Engine.OpenGL {
                 this.transform = value;
             }
         }
+
         public ModelInformation ModelInformation {
             get {
                 return mi;
             }
+
+        }
+
+        public void Update(GameObject parent) {
+            
         }
     }
 

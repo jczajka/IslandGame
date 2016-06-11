@@ -3,6 +3,7 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL4;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 
@@ -27,7 +28,7 @@ namespace IslandGame.Engine.OpenGL {
             if (status != 1) {
                 string info;
                 GL.GetProgramInfoLog(id, out info);
-                Console.WriteLine(info);
+                Trace.TraceError(info);
                 Dispose();
             }
 
@@ -229,7 +230,7 @@ namespace IslandGame.Engine.OpenGL {
             if (status != 1) {
                 string info;
                 GL.GetShaderInfoLog(id, out info);
-                Console.WriteLine(info);
+                Trace.TraceError(info);
                 Dispose();
             }
 

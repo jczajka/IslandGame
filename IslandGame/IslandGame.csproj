@@ -72,6 +72,8 @@
     <Compile Include="Engine\Light\LightManager.cs" />
     <Compile Include="Engine\OpenGL\ModelBatch.cs" />
     <Compile Include="Engine\OpenGL\ResourceCleaner.cs" />
+    <Compile Include="Engine\Scene\Components\LookAtComponent.cs" />
+    <Compile Include="Engine\Scene\GameObject.cs" />
     <Compile Include="Engine\SimpleGame.cs" />
     <Compile Include="IslandGame.cs" />
     <Compile Include="Engine\Light\LightRenderer.cs" />

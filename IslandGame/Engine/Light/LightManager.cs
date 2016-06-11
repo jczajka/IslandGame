@@ -1,4 +1,5 @@
 ﻿using IslandGame.Engine.OpenGL;
+using IslandGame.Engine.Scene;
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using System.Collections.Generic;
@@ -9,13 +10,11 @@ namespace IslandGame.Engine.Light {
 
         private GLSLProgram skyboxshader;
         private GLSLProgram ambientlightshader;
+        private GLSLProgram directionallightshader;
+        private GLSLProgram pointlightshader;
+        private GLSLProgram spotlightshader;
 
-        private DirectionalLightRenderer dlrenderer;
-        private PointLightRenderer plrenderer;
-        private SpotLightRenderer slrenderer;
-        private List<ILightRenderer> lightrenderer = new List<ILightRenderer>();
-
-
+        private GenericLightRenderer lightrenderer;
 
         public LightManager() {
             skyboxshader = new GLSLProgram()
@@ -30,22 +29,34 @@ namespace IslandGame.Engine.Light {
                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/FX/GammaCorrection.glsl", ShaderType.FragmentShader))
                .Link();
 
-            dlrenderer = new DirectionalLightRenderer();
-            lightrenderer.Add(dlrenderer);
-            plrenderer = new PointLightRenderer();
-            lightrenderer.Add(plrenderer);
-            slrenderer = new SpotLightRenderer();
-            lightrenderer.Add(slrenderer);
+            directionallightshader = new GLSLProgram()
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/FX/PostProgressVertex.glsl", ShaderType.VertexShader))
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/Light/DirectionalLightFragment.glsl", ShaderType.FragmentShader))
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/FX/GammaCorrection.glsl", ShaderType.FragmentShader))
+                .Link();
+
+            pointlightshader = new GLSLProgram()
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/Light/PointLightVertex.glsl", ShaderType.VertexShader))
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/Light/PointLightFragment.glsl", ShaderType.FragmentShader))
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/FX/GammaCorrection.glsl", ShaderType.FragmentShader))
+                .Link();
+
+            spotlightshader = new GLSLProgram()
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/Light/SpotLightVertex.glsl", ShaderType.VertexShader))
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/Light/SpotLightFragment.glsl", ShaderType.FragmentShader))
+                .AttachShaderAndDelete(GLSLShader.FromFile("./Data/Shader/FX/GammaCorrection.glsl", ShaderType.FragmentShader))
+                .Link();
+
+            lightrenderer = new GenericLightRenderer();
 
         }
 
-        public void RenderLight(Camera camera, Texture2D gPosition, Texture2D gNormal, Texture2D gAlbedo) {
-
+        public void RenderLight(Camera camera, GameObject root, Texture2D gPosition, Texture2D gNormal, Texture2D gAlbedo) {
             
-            //GL.Clear(ClearBufferMask.ColorBufferBit);
+            Matrix4 view = camera.ViewMatrix;
+            Matrix4 mvp = camera.CameraMatrix;
 
             skyboxshader.Bind();
-            Matrix4 view = camera.ViewMatrix;
             skyboxshader.SetUniform("view_matrix", false, ref view);
             GL.DepthMask(false);
             GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
@@ -65,101 +76,24 @@ namespace IslandGame.Engine.Light {
 
             GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.One);
 
-            foreach (ILightRenderer r in lightrenderer) {
-                r.RenderLight(camera);
-            }
+            directionallightshader.Bind();
+            directionallightshader.SetUniform("viewPos", camera.Position);
+            directionallightshader.BindUniformBlock("lights", 0);
+            lightrenderer.RenderLight<DirectionalLight>(root, 6);
+
+            pointlightshader.Bind();
+            pointlightshader.SetUniform("viewPos", camera.Position);
+            pointlightshader.SetUniform("mvp", false, ref mvp);
+            pointlightshader.BindUniformBlock("lights", 0);
+            lightrenderer.RenderLight<PointLight>(root, 36);
+
+            spotlightshader.Bind();
+            spotlightshader.SetUniform("viewPos", camera.Position);
+            spotlightshader.SetUniform("mvp", false, ref mvp);
+            spotlightshader.BindUniformBlock("lights", 0);
+            lightrenderer.RenderLight<SpotLight>(root, 36);
 
             GL.Disable(EnableCap.Blend);
-        }
-
-        public void Resize(int width, int height) {
-            foreach (ILightRenderer r in lightrenderer) {
-                r.Resize(width, height);
-            }
-        }
-
-        public void Delete() {
-            skyboxshader.Dispose();
-            ambientlightshader.Dispose();
-            foreach (ILightRenderer r in lightrenderer) {
-                r.Delete();
-            }
-        }
-
-        public void AddLight(DirectionalLight l) {
-            dlrenderer.AddLight(l);
-        }
-
-        public void AddLight(PointLight l) {
-            plrenderer.AddLight(l);
-        }
-
-        public void AddLight(SpotLight l) {
-            slrenderer.AddLight(l);
-        }
-
-        public void RemoveLight(DirectionalLight l) {
-            dlrenderer.RemoveLight(l);
-        }
-
-        public void RemoveLight(PointLight l) {
-            plrenderer.RemoveLight(l);
-        }
-
-        public void RemoveLight(SpotLight l) {
-            slrenderer.RemoveLight(l);
-        }
-
-        public void AddDynamicLight(DirectionalLight l) {
-            dlrenderer.AddDynamicLight(l);
-        }
-
-        public void AddDynamicLight(PointLight l) {
-            plrenderer.AddDynamicLight(l);
-        }
-
-        public void AddDynamicLight(SpotLight l) {
-            slrenderer.AddDynamicLight(l);
-        }
-
-        public void RemoveDynamicLight(DirectionalLight l) {
-            dlrenderer.RemoveDynamicLight(l);
-        }
-
-        public void RemoveDynamicLight(PointLight l) {
-            plrenderer.RemoveDynamicLight(l);
-        }
-
-        public void RemoveDynamicLight(SpotLight l) {
-            slrenderer.RemoveDynamicLight(l);
-        }
-
-        public int LightCount {
-            get {
-                int lc = 0;
-                foreach(ILightRenderer lr in lightrenderer) {
-                    lc += lr.LightCount;
-                }
-                return lc;
-            }
-        }
-
-        public PointLightRenderer PointLightRenderer {
-            get {
-                return plrenderer;
-            }
-        }
-
-        public SpotLightRenderer SpotLightRenderer {
-            get {
-                return slrenderer;
-            }
-        }
-
-        public DirectionalLightRenderer DirectionalLightRenderer {
-            get {
-                return dlrenderer;
-            }
         }
 
     }

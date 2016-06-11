@@ -1,5 +1,6 @@
 ﻿using IslandGame.Engine.Light;
 using IslandGame.Engine.OpenGL;
+using IslandGame.Engine.Scene;
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using System;
@@ -8,6 +9,7 @@ namespace IslandGame.Engine {
 
     abstract class SimpleGame : GameWindow{
         private Camera camera;
+        private GameObject root;
 
         private GLSLProgram worldshader;
         private GLSLProgram ppshader;
@@ -40,12 +42,19 @@ namespace IslandGame.Engine {
 
         public SimpleGame() {
             camera = new Camera(75f * (float)Math.PI / 180, (float)Width / (float)Height, 0.1f, 10000.0f);
+            root = new GameObject();
 
             this.Load += LoadGame;
             this.RenderFrame += RenderGame;
             this.Resize += ResizeGame;
-            this.Unload += (object sender, EventArgs e) => { ResourceCleaner.CleanUp(true);  };
-            this.UpdateFrame += (object sender, FrameEventArgs e) => { ResourceCleaner.CleanUp(false); };
+            this.Unload += (object sender, EventArgs e) => {
+                ResourceCleaner.CleanUp(true);
+            };
+            this.UpdateFrame += (object sender, FrameEventArgs e) => {
+                ResourceCleaner.CleanUp(false);
+                root.Update();
+                camera.Update();
+            };
 
         } 
 
@@ -132,7 +141,7 @@ namespace IslandGame.Engine {
                 Matrix4 mvp = camera.CameraMatrix;
                 worldshader.SetUniform("mvp", false, ref mvp);
                 worldshader.Bind();
-                model.Draw();
+                model.Draw(root);
 
                 GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
                 GL.Enable(EnableCap.CullFace);
@@ -146,10 +155,10 @@ namespace IslandGame.Engine {
                 worldshader.Bind();
                 Matrix4 mvp = camera.CameraMatrix;
                 worldshader.SetUniform("mvp", false, ref mvp);
-                model.Draw();
+                model.Draw(root);
 
                 lightBuffer.Bind();
-                lightManager.RenderLight(camera, gPosition, gNormal, gAlbedo);
+                lightManager.RenderLight(camera, root, gPosition, gNormal, gAlbedo);
                 
                 if (bloom) {
                     bloomshader.Bind();
@@ -195,8 +204,6 @@ namespace IslandGame.Engine {
             gNormal.Resize(Width, Height);
             gAlbedo.Resize(Width, Height);
             gDepth.Resize(Width, Height);
-
-            lightManager.Resize(Width, Height);
 
             lightTexture.Resize(Width, Height);
 
@@ -256,6 +263,12 @@ namespace IslandGame.Engine {
         public ModelBatch ModelBatch{
             get{
                 return model;
+            }
+        }
+
+        public GameObject Root {
+            get {
+                return root;
             }
         }
 

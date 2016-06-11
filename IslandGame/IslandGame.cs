@@ -118,7 +118,7 @@ namespace IslandGame {
             sun.Direction = -new Vector3((float)Math.Cos(time / 20), (float)Math.Sin(time / 20), (float)Math.Sin(time / 20) * 0.5f).Normalized();
 
 
-            Vector3 z = Vector3.Normalize(Camera.Position);
+            Vector3 z = Vector3.Normalize(Camera.Position - new Vector3(0, 200, 0));
             Vector3 x = Vector3.Normalize(Vector3.Cross(new Vector3(0, 1, 0), z));
             Vector3 y = Vector3.Normalize(Vector3.Cross(z, x));
 
@@ -127,7 +127,10 @@ namespace IslandGame {
                                       new Vector4(x.Z, y.Z, z.Z, 0.0f),
                                       Vector4.UnitW);
             
-            specialmonkey.Transform = rot;
+            specialmonkey.Transform = new Matrix4(1, 0, 0, 0,
+                                                  0, 1, 0, 200,
+                                                  0, 0, 1, 0,
+                                                  0, 0, 0, 1) * rot;
 
             //ModelBatch.AddGeometry(new Geometry(monkey, Matrix4.CreateFromQuaternion(Camera.Rotation) * Matrix4.CreateTranslation(Camera.Position)));
 

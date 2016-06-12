@@ -5,6 +5,18 @@ namespace IslandGame.Engine.OpenGL {
 
     class Framebuffer : Resource{
 
+        private static Framebuffer current = null;
+
+        public static Framebuffer Current {
+            get {
+                return current;
+            }
+            set {
+                current = value;
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, value == null ? 0 : value.ID);
+            }
+        }
+
         public int id;
 
         public Framebuffer() {
@@ -33,11 +45,11 @@ namespace IslandGame.Engine.OpenGL {
         }
 
         public void Bind() {
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, id);
+            Current = this;
         }
 
         public void Unbind() {
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            Current = null;
         }
 
         public override void Release() {

@@ -194,10 +194,6 @@ namespace IslandGame.Engine.OpenGL {
             }
 
         }
-
-        public void Update(GameObject parent) {
-            
-        }
     }
 
     public struct Face {

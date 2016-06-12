@@ -36,12 +36,30 @@ namespace IslandGame.Engine.Scene {
             return this;
         }
 
-        public void Update() {
+        public void Update(double time) {
             foreach(GameComponent gc in components) {
-                gc.Update(this);
+                gc.OnUpdate(this, time);
             }
             foreach(GameObject go in children) {
-                go.Update();
+                go.Update(time);
+            }
+        }
+
+        public void WorldRender(Camera camera) {
+            foreach(GameComponent gc in components) {
+                gc.OnWorldRender(this, camera);
+            }
+            foreach(GameObject go in children) {
+                go.WorldRender(camera);
+            }
+        }
+
+        public void LightRender(Camera camera) {
+            foreach(GameComponent gc in components) {
+                gc.OnLightRender(this, camera);
+            }
+            foreach(GameObject go in children) {
+                go.LightRender(camera);
             }
         }
 
@@ -81,9 +99,19 @@ namespace IslandGame.Engine.Scene {
 
     }
 
-    public interface GameComponent {
+    public abstract class GameComponent {
 
-        void Update(GameObject parent);
+        public virtual void OnUpdate(GameObject parent, double time) {
+
+        }
+
+        public virtual void OnWorldRender(GameObject parent, Camera camera) {
+
+        }
+
+        public virtual void OnLightRender(GameObject parent, Camera camera) {
+
+        }
 
     }
 

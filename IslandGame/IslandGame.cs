@@ -13,7 +13,7 @@ namespace IslandGame {
     class IslandGame : SimpleGame{
         
         private DirectionalLight sun;
-        
+
         private double time;
 
         private ModelInformation monkey;
@@ -34,10 +34,8 @@ namespace IslandGame {
                 }
                 if (key.Key == Key.F11) {
                     if (WindowState != WindowState.Fullscreen) {
-                        //VSync = VSyncMode.Adaptive;
                         WindowState = WindowState.Fullscreen;
                     } else {
-                        //VSync = VSyncMode.Off;
                         WindowState = WindowState.Normal;
                     }
                 }
@@ -50,10 +48,13 @@ namespace IslandGame {
                 if (key.Key == Key.F8) {
                     Fxaa = !Fxaa;
                 }
+                if(key.Key == Key.F7) {
+                    LightScattering = !LightScattering;
+                }
                 if(key.Key == Key.F1) {
                     ModelBatch.RowOrder = !ModelBatch.RowOrder;
                 }
-                if(key.Key == Key.F7) {
+                if(key.Key == Key.F6) {
                     sun.Color = (sun.Color.Length == 0 ? new Vector3(1,1,1) : new Vector3(0, 0,0));
                 }
                 if (key.Key == Key.Tab) {
@@ -87,6 +88,7 @@ namespace IslandGame {
             sun = new DirectionalLight(new Vector3(0, -1, 0));
             time = 30;
             Root.Add(sun);
+            Root.Add(new LightScatteringComponent(new Vector3(1.0f, 0.8f, 0.3f)));
 
            
             monkey = ModelBatch.LoadModel(Faces.FromFile(@".\Data\Model\Monkey.lpm"));//new Model(faces)
@@ -125,11 +127,10 @@ namespace IslandGame {
             if (Keyboard[Key.A]) Camera.Position += Camera.Left    * (Keyboard[Key.ShiftLeft] ? 600 : 100) * (float)e.Time;
             if (Keyboard[Key.D]) Camera.Position += Camera.Right   * (Keyboard[Key.ShiftLeft] ? 600 : 100) * (float)e.Time;
 
-            if (Keyboard[Key.Q]) time += e.Time * 2;
-            if (!Keyboard[Key.X]) Title = "Lights: " + Root.GetCount<Light>() + " | Bloom: " + Bloom + " | FXAA: " + Fxaa;
+            if (Keyboard[Key.Q]) time += e.Time * 6;
+            if (!Keyboard[Key.X]) Title = "Lights: " + Root.GetCount<Light>() + " | Bloom: " + Bloom + " | FXAA: " + Fxaa + " | LightScattering: " + LightScattering;
 
             sun.Direction = -new Vector3((float)Math.Cos(time / 20), (float)Math.Sin(time / 20), (float)Math.Sin(time / 20) * 0.5f).Normalized();
-
 
             Vector3 z = Vector3.Normalize(Camera.Position - new Vector3(0, 200, 0));
             Vector3 x = Vector3.Normalize(Vector3.Cross(new Vector3(0, 1, 0), z));

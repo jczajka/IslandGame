@@ -57,7 +57,7 @@ void main() {
 		out_color = texture(image, texCoords);
 	#endif
 
-	out_color += texture(bloom, texCoords)*1.5;
+	out_color += texture(bloom, texCoords);
 
 	float exposure = 1;
     out_color.rgb = fromGamma(vec3(1.0) - exp(-out_color.rgb * exposure));

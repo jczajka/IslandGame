@@ -34,10 +34,6 @@ namespace IslandGame.Engine.Light {
         public abstract float[] Data {
             get;
         }
-        
-        public void Update(GameObject parent) {
-            
-        }
 
     }
 
@@ -234,6 +230,33 @@ namespace IslandGame.Engine.Light {
                 return new float[] { position.X, position.Y, position.Z, radius, Color.X, Color.Y, Color.Z, constant, linear, quadratic, innercutoff, outercutoff, direction.X, direction.Y, direction.Z, 0 };
             }
         }
+    }
+
+    public class LightScatteringComponent : GameComponent{
+
+        private Vector3 raycolor;
+
+        public LightScatteringComponent() : this(new Vector3(0, 0, 0)) {
+
+        }
+
+        public LightScatteringComponent(Vector3 raycolor) {
+            this.raycolor = raycolor;
+        }
+
+        public bool HasSpecialColor() {
+            return raycolor.Length != 0;
+        }
+
+        public Vector3 RayColor {
+            get {
+                return raycolor;
+            }
+            set {
+                this.raycolor = value;
+            }
+        }
+
     }
 
 }

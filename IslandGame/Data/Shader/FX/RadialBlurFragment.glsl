@@ -3,7 +3,7 @@
 
 out vec4 color;
 
-layout(binding = 0) uniform sampler2D image;
+layout(binding = 4) uniform sampler2D image;
 
 in vec2 texCoords;
 
@@ -14,7 +14,7 @@ void main() {
 
 	vec2 lc = vec2(clamp(lightpos.x, 0, 1), clamp(lightpos.y, 0, 1));
 
-	vec4 SumColor = vec4(0.0, 0.0, 0.0, 0.0);
+	float SumColor = 0;
 	vec2 TexCoord = texCoords;
 	TexCoord += - lc.xy;
  
@@ -22,8 +22,8 @@ void main() {
 
 	for (int i = 0; i < sampels; i++) {
 		float scale = 1.0 - (float(i) / (sampels-1));
-		SumColor += texture(image, TexCoord * scale + lc.xy);
+		SumColor += texture(image, TexCoord * scale + lc.xy).r;
 	}
  
-	color = SumColor / sampels;
+	color = vec4(vec3(SumColor / sampels),1);
 }

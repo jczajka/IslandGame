@@ -51,7 +51,7 @@ namespace IslandGame.Engine.Light {
 
         }
 
-        public void RenderLight(Camera camera, GameObject root, Texture2D gPosition, Texture2D gNormal, Texture2D gAlbedo) {
+        public void RenderLight(Camera camera, GameObject root) {
             
             Matrix4 view = camera.ViewMatrix;
             Matrix4 mvp = camera.CameraMatrix;
@@ -61,11 +61,6 @@ namespace IslandGame.Engine.Light {
             GL.DepthMask(false);
             GL.DrawArrays(PrimitiveType.Triangles, 0, 36);
             GL.DepthMask(true);
-
-
-            gPosition.Bind(TextureUnit.Texture0);
-            gNormal.Bind(TextureUnit.Texture1);
-            gAlbedo.Bind(TextureUnit.Texture2);
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);

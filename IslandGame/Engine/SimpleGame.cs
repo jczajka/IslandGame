@@ -3,6 +3,7 @@ using IslandGame.Engine.OpenGL;
 using IslandGame.Engine.Scene;
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Input;
 using System;
 
 namespace IslandGame.Engine {
@@ -35,7 +36,10 @@ namespace IslandGame.Engine {
         private Framebuffer bloomFramebuffer;
         private Texture2D bloomTexture;
 
-        private bool bloom = false;
+        private LightScatteringRenderer lsr;
+
+        private bool bloom = true;
+        private bool lightscattering = true;
         private bool fxaa = true;
         private bool wireframe = false;
         
@@ -52,7 +56,7 @@ namespace IslandGame.Engine {
             };
             this.UpdateFrame += (object sender, FrameEventArgs e) => {
                 ResourceCleaner.CleanUp(false);
-                root.Update();
+                root.Update(e.Time);
                 camera.Update();
             };
 
@@ -127,17 +131,19 @@ namespace IslandGame.Engine {
             bloomFramebuffer.Unbind();
 
             model = new ModelBatch();
+
+            lsr = new LightScatteringRenderer(Width, Height);
         }
 
         private void RenderGame(object sender, FrameEventArgs e) {
             
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            if (wireframe) {
+            if(wireframe) {
 
                 GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
                 GL.Disable(EnableCap.CullFace);
-                
+
                 Matrix4 mvp = camera.CameraMatrix;
                 worldshader.SetUniform("mvp", false, ref mvp);
                 worldshader.Bind();
@@ -151,15 +157,24 @@ namespace IslandGame.Engine {
                 gBuffer.Bind();
 
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-                
+
                 worldshader.Bind();
                 Matrix4 mvp = camera.CameraMatrix;
                 worldshader.SetUniform("mvp", false, ref mvp);
                 model.Draw(root);
+                root.WorldRender(camera);
 
                 lightBuffer.Bind();
-                lightManager.RenderLight(camera, root, gPosition, gNormal, gAlbedo);
-                
+                gPosition.Bind(TextureUnit.Texture0);
+                gNormal.Bind(TextureUnit.Texture1);
+                gAlbedo.Bind(TextureUnit.Texture2);
+                lightManager.RenderLight(camera, root);
+                root.LightRender(camera);
+
+                if(lightscattering) {
+                    lsr.RenderLightScattering(root, camera);
+                }
+
                 if (bloom) {
                     bloomshader.Bind();
                     bloomFramebuffer.Bind();
@@ -212,6 +227,8 @@ namespace IslandGame.Engine {
 
             bloomTexture.Resize(Width, Height);
 
+            lsr.Resize(Width, Height);
+
             ppshader.Bind();
             ppshader.SetUniform("screen", (float)Width, (float)Height);
         }
@@ -257,6 +274,15 @@ namespace IslandGame.Engine {
             }
             set {
                 wireframe = value;
+            }
+        }
+
+        public bool LightScattering {
+            get {
+                return lightscattering;
+            }
+            set {
+                lightscattering = value;
             }
         }
 

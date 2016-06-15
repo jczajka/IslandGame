@@ -9,7 +9,7 @@ layout(binding = 2) uniform sampler2D gAlbedo;
 
 in vec2 texCoords;
 
-uniform vec3 lightColor;
+uniform vec3 lightColor = vec3(1,0,0);
 
 vec3 toGamma(vec3 color);
 

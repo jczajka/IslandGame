@@ -4,6 +4,7 @@
 layout (location = 0) out vec3 gPosition;
 layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gAlbedo;
+layout (location = 3) out vec2 gVelocity;
 //layout (location = 3) out float gGodrays;
 
 in GS_OUT{
@@ -11,10 +12,12 @@ in GS_OUT{
 	vec3 normal;
 	vec3 color;
 	vec2 light;
+	vec2 velocity;
 } fs_in;
 
 void main(){
 	
+	gVelocity = fs_in.velocity;
 	gPosition = fs_in.position;
 	gNormal = normalize(fs_in.normal);
 

@@ -7,6 +7,7 @@ in VS_OUT{
 	vec3 position;
 	vec3 color;
 	vec2 light;
+	vec2 velocity;
 } gs_in[3];
 
 out GS_OUT{
@@ -14,6 +15,7 @@ out GS_OUT{
 	vec3 normal;
 	vec3 color;
 	vec2 light;
+	vec2 velocity;
 } gs_out;
 
 void main(){
@@ -26,6 +28,7 @@ void main(){
 		gs_out.position = gs_in[i].position;
 		gs_out.normal = normal;
 		gs_out.light = gs_in[i].light;
+		gs_out.velocity = gs_in[i].velocity;
 		EmitVertex();
 	}
 	EndPrimitive();

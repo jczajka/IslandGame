@@ -7,8 +7,8 @@ out vec4 out_color;
 
 layout(binding = 0) uniform sampler2D image;
 layout(binding = 1) uniform sampler2D bloom;
+layout(binding = 2) uniform sampler2D velocity;
 
-uniform vec2 screen = vec2(1280, 720);
 uniform bool fxaa = true;
 
 in vec2 texCoords;
@@ -29,6 +29,7 @@ void main() {
 		float fxaa_min_reduce = 1.0/128.0;
 		float fxaa_mul_reduce = 1.0/8.0;
 		
+		vec2 screen = textureSize(image, 0);
 		vec3 luma = vec3(0.229, 0.587, 0.114);
 		float lumaTL = dot(luma, texture(image, (gl_FragCoord.xy + vec2(-1,-1))/screen).xyz);
 		float lumaTR = dot(luma, texture(image, (gl_FragCoord.xy + vec2( 1,-1))/screen).xyz);
@@ -56,10 +57,19 @@ void main() {
 	#else
 		out_color = texture(image, texCoords);
 	#endif
-
+	
 	out_color += texture(bloom, texCoords);
+
+
+	
+	vec2 v = texture(velocity, texCoords).xy;
+	if(length(v) != 0){
+		for(int i = 1; i < 8; i++)  {  
+			out_color += texture(image, texCoords + v * i * 0.17);
+		} 
+		out_color /= 8;
+	}
 
 	float exposure = 1;
     out_color.rgb = fromGamma(vec3(1.0) - exp(-out_color.rgb * exposure));
-
 }

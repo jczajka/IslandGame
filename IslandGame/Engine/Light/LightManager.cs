@@ -51,7 +51,7 @@ namespace IslandGame.Engine.Light {
 
         }
 
-        public void RenderLight(Camera camera, GameObject root) {
+        public void RenderLight(Camera camera, GameObject root, Vector3 ambientlight) {
             
             Matrix4 view = camera.ViewMatrix;
             Matrix4 mvp = camera.CameraMatrix;
@@ -66,7 +66,7 @@ namespace IslandGame.Engine.Light {
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
             ambientlightshader.Bind();
-            ambientlightshader.SetUniform("lightColor", 0.05f, 0.05f, 0.05f);
+            ambientlightshader.SetUniform("lightColor", ambientlight);
             GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
 
             GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.One);

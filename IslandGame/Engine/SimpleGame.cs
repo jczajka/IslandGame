@@ -18,6 +18,7 @@ namespace IslandGame.Engine {
         private GLSLProgram bloomshader;
 
         private LightManager lightManager;
+        private Vector3 ambientlight = new Vector3(0, 0, 0);
 
         private ModelBatch model;
 
@@ -26,6 +27,7 @@ namespace IslandGame.Engine {
         private Texture2D gPosition;
         private Texture2D gNormal;
         private Texture2D gAlbedo;
+        private Texture2D gVelocity;
 
         private Framebuffer lightBuffer;
         private Texture2D lightTexture;
@@ -42,7 +44,6 @@ namespace IslandGame.Engine {
         private bool lightscattering = true;
         private bool fxaa = true;
         private bool wireframe = false;
-        
 
         public SimpleGame() {
             camera = new Camera(75f * (float)Math.PI / 180, (float)Width / (float)Height, 0.1f, 10000.0f);
@@ -96,19 +97,22 @@ namespace IslandGame.Engine {
 
             gDepth = new Renderbuffer(Width, Height, RenderbufferStorage.DepthComponent);
             gPosition = new Texture2D(Width, Height, PixelInternalFormat.Rgb32f, PixelFormat.Rgb, PixelType.Float);
-            gNormal = new Texture2D(Width, Height, PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.Float);
+            gNormal = new Texture2D(Width, Height, PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.HalfFloat);
             gAlbedo = new Texture2D(Width, Height, PixelInternalFormat.Rgba, PixelFormat.Rgba, PixelType.UnsignedByte);
-            
+            gVelocity = new Texture2D(Width, Height, PixelInternalFormat.Rg16f, PixelFormat.Rg, PixelType.HalfFloat);
+
             gBuffer = new Framebuffer()
                 .AttachRenderBuffer(gDepth, FramebufferAttachment.DepthAttachment)
                 .AttachTexture(gPosition, FramebufferAttachment.ColorAttachment0)
                 .AttachTexture(gNormal, FramebufferAttachment.ColorAttachment1)
-                .AttachTexture(gAlbedo, FramebufferAttachment.ColorAttachment2);
-            GL.DrawBuffers(3, new DrawBuffersEnum[] { DrawBuffersEnum.ColorAttachment0, DrawBuffersEnum.ColorAttachment1, DrawBuffersEnum.ColorAttachment2 });
-            if (!gBuffer.CheckStatus()) Console.WriteLine("Framebuffer error");
+                .AttachTexture(gAlbedo, FramebufferAttachment.ColorAttachment2)
+                .AttachTexture(gVelocity, FramebufferAttachment.ColorAttachment3);
+            GL.DrawBuffers(4, new DrawBuffersEnum[] { DrawBuffersEnum.ColorAttachment0, DrawBuffersEnum.ColorAttachment1, DrawBuffersEnum.ColorAttachment2, DrawBuffersEnum.ColorAttachment3 });
+            gBuffer.CheckStatus();
             gBuffer.Unbind();
 
-            lightTexture = new Texture2D(Width, Height, PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.Float);
+            lightTexture = new Texture2D(Width, Height, PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.HalfFloat);
+            lightTexture.SetWarpMode(TextureWrapMode.ClampToEdge);
             lightBuffer = new Framebuffer()
                 .AttachTexture(lightTexture, FramebufferAttachment.ColorAttachment0);
             lightBuffer.CheckStatus();
@@ -117,14 +121,14 @@ namespace IslandGame.Engine {
             lightManager = new LightManager();
             
             for (int i = 0; i < 2; i++) {
-                blurTexture[i] = new Texture2D((int)(Width / 2f), (int)(Height / 2f), PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.Float);
+                blurTexture[i] = new Texture2D((int)(Width / 2f), (int)(Height / 2f), PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.HalfFloat);
                 blurTexture[i].SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
                 blurFramebuffer[i] = new Framebuffer().AttachTexture(blurTexture[i], FramebufferAttachment.ColorAttachment0);
                 if (!blurFramebuffer[i].CheckStatus()) Console.WriteLine("Framebuffer error");
                 blurFramebuffer[i].Unbind();
             }
 
-            bloomTexture = new Texture2D((int)(Width / 1f), (int)(Height / 1f), PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.Float);
+            bloomTexture = new Texture2D((int)(Width / 1f), (int)(Height / 1f), PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.HalfFloat);
             bloomTexture.SetFiltering(TextureMinFilter.Linear, TextureMagFilter.Linear);
             bloomFramebuffer = new Framebuffer().AttachTexture(bloomTexture, FramebufferAttachment.ColorAttachment0);
             if (!bloomFramebuffer.CheckStatus()) Console.WriteLine("Framebuffer error");
@@ -134,6 +138,8 @@ namespace IslandGame.Engine {
 
             lsr = new LightScatteringRenderer(Width, Height);
         }
+
+        
 
         private void RenderGame(object sender, FrameEventArgs e) {
             
@@ -159,6 +165,8 @@ namespace IslandGame.Engine {
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                 worldshader.Bind();
+                Matrix4 pmvp = camera.PreviousCameraMatrix;
+                worldshader.SetUniform("premvp", false, ref pmvp);
                 Matrix4 mvp = camera.CameraMatrix;
                 worldshader.SetUniform("mvp", false, ref mvp);
                 model.Draw(root);
@@ -168,7 +176,7 @@ namespace IslandGame.Engine {
                 gPosition.Bind(TextureUnit.Texture0);
                 gNormal.Bind(TextureUnit.Texture1);
                 gAlbedo.Bind(TextureUnit.Texture2);
-                lightManager.RenderLight(camera, root);
+                lightManager.RenderLight(camera, root, ambientlight);
                 root.LightRender(camera);
 
                 if(lightscattering) {
@@ -197,13 +205,18 @@ namespace IslandGame.Engine {
 
                 }
 
+
+                
+
                 blurFramebuffer[0].Unbind();
                 GL.Viewport(0, 0, Width, Height);
                 ppshader.Bind();
                 blurTexture[1].Bind(TextureUnit.Texture1);
                 lightTexture.Bind(TextureUnit.Texture0);
-
+                gVelocity.Bind(TextureUnit.Texture2);
+                GL.Enable(EnableCap.Blend);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
+                GL.Disable(EnableCap.Blend);
             }
             
             this.SwapBuffers();
@@ -219,6 +232,7 @@ namespace IslandGame.Engine {
             gNormal.Resize(Width, Height);
             gAlbedo.Resize(Width, Height);
             gDepth.Resize(Width, Height);
+            gVelocity.Resize(Width, Height);
 
             lightTexture.Resize(Width, Height);
 
@@ -228,9 +242,6 @@ namespace IslandGame.Engine {
             bloomTexture.Resize(Width, Height);
 
             lsr.Resize(Width, Height);
-
-            ppshader.Bind();
-            ppshader.SetUniform("screen", (float)Width, (float)Height);
         }
 
         public Camera Camera {
@@ -254,6 +265,15 @@ namespace IslandGame.Engine {
                 blurFramebuffer[1].Bind();
                 GL.Clear(ClearBufferMask.ColorBufferBit);
                 blurFramebuffer[1].Unbind();
+            }
+        }
+
+        public Vector3 AmbientLight {
+            get {
+                return ambientlight;
+            }
+            set {
+                ambientlight = value;
             }
         }
 

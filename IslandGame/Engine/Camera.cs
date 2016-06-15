@@ -7,6 +7,7 @@ namespace IslandGame {
 
         private Matrix4 viewmatrix;
         private Matrix4 cameramatrix;
+        private Matrix4 previouscameramatrix;
 
         private Quaternion rotation;
         private Vector3 position;
@@ -29,6 +30,7 @@ namespace IslandGame {
             Matrix4 perspectiveM = Matrix4.CreatePerspectiveFieldOfView(fov, aspect, zNear, zFar);
             Matrix4 rotationM = Matrix4.CreateFromQuaternion(rotation);
             Matrix4 positionM = Matrix4.CreateTranslation(-position);
+            previouscameramatrix = cameramatrix;
             cameramatrix = positionM * rotationM * perspectiveM;
             viewmatrix = rotationM * perspectiveM;
         }
@@ -38,6 +40,13 @@ namespace IslandGame {
                 return cameramatrix;
             }
         }
+
+        public Matrix4 PreviousCameraMatrix {
+            get {
+                return previouscameramatrix;
+            }
+        }
+
 
         public Matrix4 ViewMatrix {
             get {

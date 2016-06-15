@@ -6,6 +6,7 @@ layout (location = 0) out vec4 out_color;
 layout(binding = 0) uniform sampler2D gPosition;
 layout(binding = 1) uniform sampler2D gNormal;
 layout(binding = 2) uniform sampler2D gAlbedo;
+layout(binding = 3) uniform sampler2D gLight;
 
 in vec2 texCoords;
 
@@ -15,6 +16,6 @@ vec3 toGamma(vec3 color);
 
 void main() {
 
-	out_color = vec4(texture(gAlbedo, texCoords).xyz * toGamma(lightColor), length(texture(gNormal, texCoords).xyz) == 0 ? 0 : 1);
+	out_color = vec4(texture(gAlbedo, texCoords).xyz * toGamma(lightColor) + texture(gAlbedo, texCoords).xyz * texture(gLight, texCoords).z, length(texture(gNormal, texCoords).xyz) == 0 ? 0 : 1);
 
 }

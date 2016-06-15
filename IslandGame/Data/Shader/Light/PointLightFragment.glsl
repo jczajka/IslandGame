@@ -6,6 +6,7 @@ layout (location = 0) out vec4 out_color;
 layout(binding = 0) uniform sampler2D gPosition;
 layout(binding = 1) uniform sampler2D gNormal;
 layout(binding = 2) uniform sampler2D gAlbedo;
+layout(binding = 3) uniform sampler2D gLight;
 
 struct Light{
 	vec3 position;
@@ -28,12 +29,11 @@ void main() {
 
 	vec2 tc = gl_FragCoord.xy/textureSize(gPosition, 0);
 	
-	float specularity = 64.0f;
-	
 	vec3 normal = texture(gNormal, tc).xyz;
 	vec3 position = texture(gPosition, tc).xyz;
 	vec3 color = texture(gAlbedo, tc).xyz;
-	float reflectivity = texture(gAlbedo, tc).w;
+	float reflectivity = texture(gLight, texCoords).y;
+	float specularity = texture(gLight, texCoords).x * 256.0;
 	
 	float distance    = length(light.position - position);
 	

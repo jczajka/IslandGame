@@ -7,7 +7,10 @@ out vec4 out_color;
 
 layout(binding = 0) uniform sampler2D image;
 layout(binding = 1) uniform sampler2D bloom;
-layout(binding = 2) uniform sampler2D velocity;
+layout(binding = 2) uniform sampler2D depth;
+
+uniform mat4 premvp;
+uniform mat4 invmvp;
 
 uniform bool fxaa = true;
 
@@ -62,10 +65,21 @@ void main() {
 
 
 	
-	vec2 v = texture(velocity, texCoords).xy;
+	//vec2 v = texture(velocity, texCoords).xy;
+
+	float z = texture(depth, texCoords).r;
+	vec4 currentpos = vec4(texCoords.x * 2 - 1, texCoords.y * 2 - 1, z, 1);
+	vec4 worldpos = invmvp * currentpos;
+	worldpos /= worldpos.w;
+	vec4 oldpos = premvp * worldpos;
+	oldpos /= oldpos.w;
+
+	vec2 v = (currentpos.xy - oldpos.xy);
+
 	if(length(v) != 0){
 		for(int i = 1; i < 8; i++)  {  
-			out_color += texture(image, texCoords + v * i * 0.17);
+			out_color += texture(image, texCoords + v * i * 0.15);
+			out_color += texture(bloom, texCoords + v * i * 0.15);
 		} 
 		out_color /= 8;
 	}

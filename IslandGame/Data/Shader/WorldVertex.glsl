@@ -11,11 +11,9 @@ out VS_OUT{
 	vec3 position;
 	vec3 color;
 	vec2 light;
-	vec2 velocity;
 } vs_out;
 
 uniform mat4 mvp;
-uniform mat4 premvp;
 
 vec3 toGamma(vec3 color);
 
@@ -26,7 +24,4 @@ void main(){
 	vs_out.light = light;
 
 	gl_Position = mvp * transformedpos;
-
-	vec4 oldpos = premvp * transformedpos;
-	vs_out.velocity = (gl_Position.xy / gl_Position.w) - (oldpos.xy / oldpos.w); 
 }

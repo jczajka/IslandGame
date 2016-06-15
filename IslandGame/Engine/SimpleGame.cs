@@ -23,11 +23,11 @@ namespace IslandGame.Engine {
         private ModelBatch model;
 
         private Framebuffer gBuffer;
-        private Renderbuffer gDepth;
+        private Texture2D gDepth;
         private Texture2D gPosition;
         private Texture2D gNormal;
         private Texture2D gAlbedo;
-        private Texture2D gVelocity;
+        private Texture2D gLight;
 
         private Framebuffer lightBuffer;
         private Texture2D lightTexture;
@@ -95,18 +95,18 @@ namespace IslandGame.Engine {
                 .Link();
             
 
-            gDepth = new Renderbuffer(Width, Height, RenderbufferStorage.DepthComponent);
+            gDepth = new Texture2D(Width, Height, PixelInternalFormat.DepthComponent32f, PixelFormat.DepthComponent, PixelType.Float);
             gPosition = new Texture2D(Width, Height, PixelInternalFormat.Rgb32f, PixelFormat.Rgb, PixelType.Float);
             gNormal = new Texture2D(Width, Height, PixelInternalFormat.Rgb16f, PixelFormat.Rgb, PixelType.HalfFloat);
-            gAlbedo = new Texture2D(Width, Height, PixelInternalFormat.Rgba, PixelFormat.Rgba, PixelType.UnsignedByte);
-            gVelocity = new Texture2D(Width, Height, PixelInternalFormat.Rg16f, PixelFormat.Rg, PixelType.HalfFloat);
+            gAlbedo = new Texture2D(Width, Height, PixelInternalFormat.Rgb, PixelFormat.Rgb, PixelType.UnsignedByte);
+            gLight = new Texture2D(Width, Height, PixelInternalFormat.Rgb, PixelFormat.Rgb, PixelType.UnsignedByte);
 
             gBuffer = new Framebuffer()
-                .AttachRenderBuffer(gDepth, FramebufferAttachment.DepthAttachment)
+                .AttachTexture(gDepth, FramebufferAttachment.DepthAttachment)
                 .AttachTexture(gPosition, FramebufferAttachment.ColorAttachment0)
                 .AttachTexture(gNormal, FramebufferAttachment.ColorAttachment1)
                 .AttachTexture(gAlbedo, FramebufferAttachment.ColorAttachment2)
-                .AttachTexture(gVelocity, FramebufferAttachment.ColorAttachment3);
+                .AttachTexture(gLight, FramebufferAttachment.ColorAttachment3);
             GL.DrawBuffers(4, new DrawBuffersEnum[] { DrawBuffersEnum.ColorAttachment0, DrawBuffersEnum.ColorAttachment1, DrawBuffersEnum.ColorAttachment2, DrawBuffersEnum.ColorAttachment3 });
             gBuffer.CheckStatus();
             gBuffer.Unbind();
@@ -165,8 +165,6 @@ namespace IslandGame.Engine {
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                 worldshader.Bind();
-                Matrix4 pmvp = camera.PreviousCameraMatrix;
-                worldshader.SetUniform("premvp", false, ref pmvp);
                 Matrix4 mvp = camera.CameraMatrix;
                 worldshader.SetUniform("mvp", false, ref mvp);
                 model.Draw(root);
@@ -176,6 +174,7 @@ namespace IslandGame.Engine {
                 gPosition.Bind(TextureUnit.Texture0);
                 gNormal.Bind(TextureUnit.Texture1);
                 gAlbedo.Bind(TextureUnit.Texture2);
+                gLight.Bind(TextureUnit.Texture3);
                 lightManager.RenderLight(camera, root, ambientlight);
                 root.LightRender(camera);
 
@@ -211,9 +210,13 @@ namespace IslandGame.Engine {
                 blurFramebuffer[0].Unbind();
                 GL.Viewport(0, 0, Width, Height);
                 ppshader.Bind();
+                Matrix4 pmvp = camera.PreviousCameraMatrix;
+                ppshader.SetUniform("premvp", false, ref pmvp);
+                Matrix4 invmvp = camera.CameraMatrix.Inverted();
+                ppshader.SetUniform("invmvp", false, ref invmvp);
                 blurTexture[1].Bind(TextureUnit.Texture1);
                 lightTexture.Bind(TextureUnit.Texture0);
-                gVelocity.Bind(TextureUnit.Texture2);
+                gDepth.Bind(TextureUnit.Texture2);
                 GL.Enable(EnableCap.Blend);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, 6);
                 GL.Disable(EnableCap.Blend);
@@ -232,7 +235,7 @@ namespace IslandGame.Engine {
             gNormal.Resize(Width, Height);
             gAlbedo.Resize(Width, Height);
             gDepth.Resize(Width, Height);
-            gVelocity.Resize(Width, Height);
+            gLight.Resize(Width, Height);
 
             lightTexture.Resize(Width, Height);
 

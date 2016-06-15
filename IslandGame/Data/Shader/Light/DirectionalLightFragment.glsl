@@ -6,6 +6,7 @@ layout (location = 0) out vec4 out_color;
 layout(binding = 0) uniform sampler2D gPosition;
 layout(binding = 1) uniform sampler2D gNormal;
 layout(binding = 2) uniform sampler2D gAlbedo;
+layout(binding = 3) uniform sampler2D gLight;
 
 in vec2 texCoords;
 flat in int id;
@@ -29,12 +30,11 @@ void main() {
 
 	Light l = lights[id];
 
-	float specularity = 64.0f;
-	
 	vec3 normal = texture(gNormal, texCoords).xyz;
 	vec3 position = texture(gPosition, texCoords).xyz;
 	vec3 color = texture(gAlbedo, texCoords).xyz;
-	float reflectivity = texture(gAlbedo, texCoords).w;
+	float reflectivity = texture(gLight, texCoords).y;
+	float specularity = texture(gLight, texCoords).x * 256.0;
 
     float diffuse = max(dot(normal, -l.direction), 0.0);
     float specular= reflectivity * max(pow(max(dot(normal, normalize(normalize(-l.direction) + normalize(viewPos - position))), 0.0), specularity),0.0);

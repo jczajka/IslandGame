@@ -130,7 +130,7 @@ namespace IslandGame {
             if (Keyboard[Key.D]) Camera.Position += Camera.Right   * (Keyboard[Key.ShiftLeft] ? 600 : 100) * (float)e.Time;
 
             if (Keyboard[Key.Q]) time += e.Time * 6;
-            //if (!Keyboard[Key.X]) Title = "Lights: " + Root.GetCount<Light>() + " | Bloom: " + Bloom + " | FXAA: " + Fxaa + " | LightScattering: " + LightScattering;
+            if (!Keyboard[Key.X]) Title = "Lights: " + Root.GetCount<Light>() + " | Bloom: " + Bloom + " | FXAA: " + Fxaa + " | LightScattering: " + LightScattering;
 
             sun.Direction = -new Vector3((float)Math.Cos(time / 20), (float)Math.Sin(time / 20), (float)Math.Sin(time / 20) * 0.5f).Normalized();
 
